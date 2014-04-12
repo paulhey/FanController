@@ -4,7 +4,7 @@
 
 SHELL = cmd.exe
 
-CG_TOOL_ROOT := C:/ti_beta/ccsv6/tools/compiler/msp430_4.2.3
+CG_TOOL_ROOT := c:/ti/ccsv6/tools/compiler/msp430_4.3.1
 
 ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
@@ -107,6 +107,18 @@ endif
 -include ../makefile.defs
 
 # Add inputs and outputs from these tool invocations to the build variables 
+EXE_OUTPUTS += \
+FanController.out \
+
+EXE_OUTPUTS__QUOTED += \
+"FanController.out" \
+
+BIN_OUTPUTS += \
+FanController.hex \
+
+BIN_OUTPUTS__QUOTED += \
+"FanController.hex" \
+
 
 # All Target
 all: FanController.out
@@ -115,13 +127,19 @@ all: FanController.out
 FanController.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: MSP430 Linker'
-	"C:/ti_beta/ccsv6/tools/compiler/msp430_4.2.3/bin/cl430" -vmsp --abi=eabi --advice:power=all -g --define=__MSP430G2553__ --diag_warning=225 --display_error_number --diag_wrap=off --printf_support=minimal -z -m"FanController.map" --heap_size=80 --stack_size=80 -i"C:/ti_beta/ccsv6/ccs_base/msp430/include" -i"C:/ti_beta/ccsv6/tools/compiler/msp430_4.2.3/lib" -i"C:/ti_beta/ccsv6/tools/compiler/msp430_4.2.3/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="FanController_linkInfo.xml" --rom_model -o "FanController.out" $(ORDERED_OBJS)
+	"c:/ti/ccsv6/tools/compiler/msp430_4.3.1/bin/cl430" -vmsp --abi=eabi --advice:power=all -g --define=__MSP430G2553__ --diag_warning=225 --display_error_number --diag_wrap=off --printf_support=minimal -z -m"FanController.map" --heap_size=80 --stack_size=80 -i"c:/ti/ccsv6/ccs_base/msp430/include" -i"c:/ti/ccsv6/tools/compiler/msp430_4.3.1/lib" -i"c:/ti/ccsv6/tools/compiler/msp430_4.3.1/include" --reread_libs --warn_sections --display_error_number --diag_wrap=off --xml_link_info="FanController_linkInfo.xml" --rom_model -o "FanController.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
+	@echo ' '
+
+FanController.hex: $(EXE_OUTPUTS)
+	@echo 'Invoking: MSP430 Hex Utility'
+	"c:/ti/ccsv6/tools/compiler/msp430_4.3.1/bin/hex430"  -o "FanController.hex" $(EXE_OUTPUTS__QUOTED)
+	@echo 'Finished building: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(MSP430_EXECUTABLE_OUTPUTS__QUOTED) "FanController.out"
+	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
 	-$(RM) "main.pp" 
 	-$(RM) "main.obj" 
 	-@echo 'Finished clean'

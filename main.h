@@ -20,7 +20,7 @@
 #define LED2 BIT6
 
 #define MOSFET BIT3
-#define TIMER0_A0_MAX 160 //For ~0.01ms @ 16MHz
+#define TIMER0_A0_MAX 256 //For ~0.01ms @ 16MHz
 #define TIMER0_A1_MAX 80 //For 50% DCY
 #define MS_COUNTER_MAX 1000 //For ~1s @ 16MHz
 
@@ -39,5 +39,6 @@ typedef enum{
 void init(void);
 void SetupUSART_A0(void);
 void SetupTIMER_A0(void);
+void SetupADC10(void);
 
 #endif /* MAIN_H_ */

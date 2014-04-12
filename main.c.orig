@@ -3,34 +3,31 @@
 /*
  * main.c
  * Paul Hey C0320318
- * FanController - Version[0.3]
- *
- * TODO:	[?] Lower PWM frequency to 25KHz
- * TODO:	[ ] Read Temp Data every ms
- * TODO:	[ ] Do 8 or 4 point rolling average
- * TODO:	[ ]
- *
- * [2014 - APR - 12]
- * 0.3 =>	[u] Respond to single character commands over UART
- * 				Responds to 'u' with "Hello World"
+ * FanController - Version[0.1]
  *
  * [2014 - APR - 10]
- * 0.2 =>	[W] PWM's LED1 and MOSFET 50% Duty Cycle @100KHz
- * 0.1 =>	[W] Echoes back on UART @ 128000 BAUD.
+<<<<<<< local
+ * 0.2 =>	[ ]Parse & Respond to commands
+ * 			[ ]Sample Temperature Sensor every 100ms
+ * 			[ ]Do rolling average with sensor data
+ *
+ * 0.1 =>	[$]Echoes back on USART @ 128000BAUD @ 16MHz.
+ *
+=======
+ * 0.2 =>
+ * 0.1 =>	Echoes back on
+ * 			USART @ 128000 BAUD.
+>>>>>>> other
+ *
  */
 
 //Global Variables
-
-const char OutputString[] = {"Hello World\r\n"};
-const char EchoString[] = {"Fan Controller Module:\r\nt => Current Temperature\r\nu => Hello\r\n"};
 
 struct{
 	//TimerMode tm;
 	//unsigned char TxBitCount;
 	unsigned char TxBuffer;
 	unsigned int ms_Counter;//Keep track of current ms count
-	unsigned int Tx_i;
-	char *
 	//unsigned Toggle:1;
 
 }GV;
@@ -57,7 +54,6 @@ void main(void) {
 void init(void){
 	GV.TxBuffer = 0x00;
 	GV.ms_Counter = 0x0000;
-	//GV.Tx_i = 0;
 	//GV.Toggle = 0;
 
 	P1DIR = PxDIR_ALL_OUT;
@@ -90,37 +86,12 @@ void SetupTIMER_A0(void){
 	TA0CTL = TASSEL_2 + MC_1 + TACLR;//SMCLK, UP, CLEAR
 }
 
-/*
-//Setup the ADC10 for temperature conversion.
-//V TEMP =0.00355(TEMP C )+0.986
-//.: TEMP C = (V TEMP - 0.986)/0.00355
-//[?](=) TEMP C = (V TEMP - 0.986) * 281.69[/?]
-//Since ADC range is 10 bits (0x0000 to 0x03FF) (0.0V to 3V?)
-//(=) TEMP C = (V TEMP
-void SetupADC10(void){
-
-}
-*/
 //ISRs
-
-#pragma vector=USCIAB0TX_VECTOR
-__interrupt void USCI0_TX_ISR(void){
-	UCA0TXBUF = OutputString[GV.Tx_i++];// TX next character
-	if (GV.Tx_i== sizeof OutputString - 1){// TX over?
-		IE2 &= ~UCA0TXIE;// Disable USCI_A0 TX interrupt
-	}
-}
 
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0_RX_ISR(void){
-	//while(!(IFG2&UCA0TXIFG));
-	//UCA0TXBUF = UCA0RXBUF;
-	if(UCA0RXBUF == 'u'){// 'u' received?
-		GV.Tx_i = 0;
-		IE2 |= UCA0TXIE;// Enable USCI_A0 TX interrupt
-		UCA0TXBUF = OutputString[GV.Tx_i++];
-
-	}
+	while(!(IFG2&UCA0TXIFG));
+	UCA0TXBUF = UCA0RXBUF;
 }
 
 #pragma vector=TIMER0_A0_VECTOR
