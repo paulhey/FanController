@@ -30,6 +30,8 @@
 #define TXD BIT1
 #define RXD BIT2
 
+#define ADC10_REF_SETTLE_TIME 16000//1us @ 16MHz?
+
 /*
 typedef enum{
 	PWM_MODE = 0,
@@ -38,7 +40,7 @@ typedef enum{
 
 void init(void);
 void SetupUSART_A0(void);
-void SetupTIMER_A0(void);
+void SetupTIMER0_A0(void);
 void SetupADC10(void);
 
 #endif /* MAIN_H_ */
