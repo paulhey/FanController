@@ -29,12 +29,18 @@
 const char OutputString[] = { "Hello World\r\n" };
 const char EchoString[] = {
 		"Fan Controller Module:\r\nt => Current Temperature\r\nu => Hello\r\n" };
+//--------------------Char: "012345678 9 A"
+char TemperatureString[] = {"Raw: TTTT\r\n"};
 
 struct {
 
-	unsigned char TxBuffer;
+	unsigned char RxBuffer;
+	unsigned int TxTemp;
 	unsigned int ms_Counter;	//Keep track of current ms count
+	unsigned char TS_i;
 	unsigned int Tx_i;
+	const char *p_TxString;
+	unsigned int TxStringLength;
 	ADCSampleData Temperature;
 
 } GV;
@@ -52,16 +58,21 @@ void main(void) {
 	init();
 	SetupADC10();
 	SetupUSART_A0();
-	SetupTIMER0_A0();
+	SetupTIMER0_A();
+	SetupTIMER1_A();
+	__enable_interrupt();
 	__bis_SR_register(LPM0_bits + GIE);
 
 	//return 0;
 }
 
 void init(void) {
-	GV.TxBuffer = 0x00;
+	GV.RxBuffer = 0x00;
 	GV.ms_Counter = 0x0000;
+	GV.TS_i = 0;
 	GV.Tx_i = 0;
+	GV.p_TxString = EchoString;
+	GV.TxStringLength = sizeof(EchoString);
 
 	P1DIR = PxDIR_ALL_OUT;
 	P1OUT = PxOUT_ALL_OUT;
@@ -85,12 +96,18 @@ void SetupUSART_A0(void) {
 	IE2 |= UCA0RXIE;
 }
 
-void SetupTIMER0_A0(void) {
+void SetupTIMER0_A(void) {
 	TA0CCR0 = TIMER0_A0_MAX;
 	TA0CCR1 = TIMER0_A0_MAX >> 1;  	//For 50% Duty Cycle
 	TA0CCTL0 |= CCIE;
 	TA0CCTL1 |= CCIE;
 	TA0CTL = TASSEL_2 + MC_1 + TACLR;  	//SMCLK, UP, CLEAR
+}
+
+void SetupTIMER1_A(void) {
+	TA1CCR0 = TIMER1_A0_MAX;
+	TA1CCTL0 |= CCIE;
+	TA1CTL = TASSEL_2 + MC_1 + TACLR;
 }
 
 //Setup the ADC10 for temperature conversion.
@@ -100,21 +117,29 @@ void SetupTIMER0_A0(void) {
 //Since ADC range is 10 bits (0x0000 to 0x03FF) (0.0V to 3V?)
 //(=) TEMP C = (V TEMP
 void SetupADC10(void) {
-	ADC10CTL1 = INCH_10 + ADC10DIV_3;  	//Temp Sensor, ADC10CLK/4
-	ADC10CTL0 = SREF_1 + ADC10SHT_3 + REFON + ADC10ON + ADC10IE; //TODO:???
+	//Temp Sensor, ADC10CLK/4
+	ADC10CTL1 = INCH_10 + ADC10DIV_3;
+	//(VREF & VSS), 64xADC10CLKS, Use Reference, Turn on, use interrupt
+	ADC10CTL0 = SREF_1 + ADC10SHT_3 + REFON + ADC10ON + ADC10IE;
 	__delay_cycles(ADC10_REF_SETTLE_TIME);
 	ADC10CTL0 |= ENC + ADC10SC;
-	//__bis_SR_register(CPUOFF + GIE);//TODO:???
-	GV.Temperature.calibrated = ADC10MEM;//Initialize samples array
+	GV.Temperature.calibrated = ADC10MEM;  	//Initialize samples array
 	InitializeSamples(&GV.Temperature);
+	GV.TxTemp = GV.Temperature.calibrated;
+}
+
+void TransmitGVTxString(void){
+	GV.Tx_i = 0;
+	IE2 |= UCA0TXIE;	// Enable USCI_A0 TX interrupt
+	UCA0TXBUF = GV.p_TxString[GV.Tx_i++];
 }
 
 //ISRs
 
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0_TX_ISR(void) {
-	UCA0TXBUF = OutputString[GV.Tx_i++]; // TX next character
-	if (GV.Tx_i == sizeof OutputString - 1) { // TX over?
+	UCA0TXBUF = GV.p_TxString[GV.Tx_i++]; // TX next character
+	if (GV.Tx_i == GV.TxStringLength - 1) { // TX over?
 		IE2 &= ~UCA0TXIE; // Disable USCI_A0 TX interrupt
 	}
 }
@@ -123,24 +148,33 @@ __interrupt void USCI0_TX_ISR(void) {
 __interrupt void USCI0_RX_ISR(void) {
 	//while(!(IFG2&UCA0TXIFG));
 	//UCA0TXBUF = UCA0RXBUF;
-	if (UCA0RXBUF == 'u') {	// 'u' received?
-		GV.Tx_i = 0;
-		IE2 |= UCA0TXIE;	// Enable USCI_A0 TX interrupt
-		UCA0TXBUF = OutputString[GV.Tx_i++];
+	GV.RxBuffer = UCA0RXBUF;
+	switch (GV.RxBuffer) {
+		case 'u':	//Hello World
+			GV.p_TxString = OutputString;
+			GV.TxStringLength = sizeof(OutputString);
+			TransmitGVTxString();
+			break;
+		case 'e':	//Echo String
+			GV.p_TxString = EchoString;
+			GV.TxStringLength = sizeof(EchoString);
+			TransmitGVTxString();
+			break;
+		case 't':
+			for(GV.TS_i = 0; GV.TS_i==3; GV.TS_i--){
+				TemperatureString[GV.TS_i+TS_OFFSET_LOW]=(((GV.TxTemp>>(GV.TS_i<<2)&TS_MASK)+ASCII_OFFSET);//TODO: FIX THIS!!
+			}
 
+		default:
+			UCA0TXBUF = '\r';
+			break;
 	}
 }
 
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR(void) {
-	//GV.ms_Counter++;
-	//if(GV.ms_Counter==MS_COUNTER_MAX){//Toggle every second
-
 	P1OUT |= LED1;
 	P2OUT |= MOSFET;
-	//	GV.ms_Counter = 0;//Reset Counter
-	//}
-
 }
 
 /* The TACCR1 CCIFG, TACCR2 CCIFG, and TAIFG flags are prioritized and combined to source a single
@@ -158,17 +192,57 @@ __interrupt void TIMER0_A0_ISR(void) {
 #pragma vector=TIMER0_A1_VECTOR
 __interrupt void TIMER0_A1_ISR(void) {
 	switch (__even_in_range(TA0IV, TA0IV_TAIFG)) {
-	case TA0IV_NONE: // No Interrupt pending
-		break;
-	case TA0IV_TACCR1: 	//TA0CCR1_CCIFG
-		P1OUT &= ~LED1;
-		P2OUT &= ~MOSFET;
-		break;
-	case TA0IV_TACCR2: 	//TA0CCR2_CCIFG
-	case TA0IV_6:		//Reserved
-	case TA0IV_8:		//Reserved
-	case TA0IV_TAIFG:	//TA0IFG
-	default:
-		break;
+		case TA0IV_NONE: // No Interrupt pending
+			break;
+		case TA0IV_TACCR1: 	//TA0CCR1_CCIFG
+			P1OUT &= ~LED1;
+			P2OUT &= ~MOSFET;
+			break;
+		case TA0IV_TACCR2: 	//TA0CCR2_CCIFG
+		case TA0IV_6:		//Reserved
+		case TA0IV_8:		//Reserved
+		case TA0IV_TAIFG:	//TA0IFG
+		default:
+			break;
 	}
 }
+
+#pragma vector=ADC10_VECTOR
+__interrupt void ADC10_ISR(void) {
+	GV.Temperature.current = ADC10MEM;
+	UpdateSampleData(&GV.Temperature);
+	GV.TxTemp = GV.Temperature.average;
+}
+
+#pragma vector=TIMER1_A0_VECTOR
+__interrupt void TIMER1_A0_ISR(void) {
+	GV.ms_Counter++;
+	if (GV.ms_Counter == MS_COUNTER_MAX) {	//Toggle every second
+
+		P1OUT ^= LED2;
+		GV.ms_Counter = 0;	//Reset Counter
+	}
+	//Trigger next ADC? ADC10CTL0 |= ENC + ADC10SC;
+	if (!(ADC10CTL0 & ADC10SC)) {
+		ADC10CTL0 |= ENC + ADC10SC;
+	}
+}
+
+/*
+ #pragma vector=TIMER1_A1_VECTOR
+ __interrupt void TIMER1_A1_ISR(void) {
+ switch (__even_in_range(TA1IV, TA1IV_TAIFG)) {
+ case TA1IV_NONE: // No Interrupt pending
+ break;
+ case TA1IV_TACCR1: 	//TA1CCR1_CCIFG
+ P1OUT &= ~LED2;
+ break;
+ case TA1IV_TACCR2: 	//TA1CCR2_CCIFG
+ case TA1IV_6:		//Reserved
+ case TA1IV_8:		//Reserved
+ case TA1IV_TAIFG:	//TA1IFG
+ default:
+ break;
+ }
+ }
+ */

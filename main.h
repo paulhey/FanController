@@ -22,7 +22,12 @@
 #define MOSFET BIT3
 #define TIMER0_A0_MAX 256 //For ~0.01ms @ 16MHz
 #define TIMER0_A1_MAX 80 //For 50% DCY
+#define TIMER1_A0_MAX 16000 //For ~1ms
 #define MS_COUNTER_MAX 1000 //For ~1s @ 16MHz
+#define ASCII_OFFSET 0x30
+#define TS_MASK 0x000f
+#define TS_OFFSET_LOW 5
+#define TS_OFFSET_HIGH 8
 
 #define LEDS_DIR P1DIR
 #define LEDS_OUT P1OUT
@@ -40,7 +45,10 @@ typedef enum{
 
 void init(void);
 void SetupUSART_A0(void);
-void SetupTIMER0_A0(void);
+void SetupTIMER0_A(void);
+void SetupTIMER1_A(void);
 void SetupADC10(void);
+
+void TransmitGVTxString(void);
 
 #endif /* MAIN_H_ */
