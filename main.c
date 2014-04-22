@@ -30,7 +30,7 @@ const char OutputString[] = { "Hello World\r\n" };
 const char EchoString[] = {
 		"Fan Controller Module:\r\nt => Current Temperature\r\nu => Hello\r\n" };
 //--------------------Char: "012345678 9 A"
-char TemperatureString[] = {"Raw: TTTT\r\n"};
+char TemperatureString[] = "Raw: TTTT\r\n";
 
 struct {
 
@@ -134,7 +134,9 @@ void TransmitGVTxString(void){
 	UCA0TXBUF = GV.p_TxString[GV.Tx_i++];
 }
 
-//ISRs
+
+
+//ISRs=================================================================
 
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0_TX_ISR(void) {
@@ -161,10 +163,10 @@ __interrupt void USCI0_RX_ISR(void) {
 			TransmitGVTxString();
 			break;
 		case 't':
-			for(GV.TS_i = 0; GV.TS_i==3; GV.TS_i--){
-				TemperatureString[GV.TS_i+TS_OFFSET_LOW]=(((GV.TxTemp>>(GV.TS_i<<2)&TS_MASK)+ASCII_OFFSET);//TODO: FIX THIS!!
-			}
-
+			GV.p_TxString = TemperatureString;
+			GV.TxStringLength = sizeof(TemperatureString);
+			TransmitGVTxString();
+			break;
 		default:
 			UCA0TXBUF = '\r';
 			break;
@@ -210,8 +212,13 @@ __interrupt void TIMER0_A1_ISR(void) {
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void) {
 	GV.Temperature.current = ADC10MEM;
+	//TODO:FIX ME
 	UpdateSampleData(&GV.Temperature);
 	GV.TxTemp = GV.Temperature.average;
+	UpdateADCString(&GV.Temperature,
+			&TemperatureString,
+			sizeof(TemperatureString),
+			TS_OFFSET_LOW);
 }
 
 #pragma vector=TIMER1_A0_VECTOR

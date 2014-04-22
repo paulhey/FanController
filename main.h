@@ -24,7 +24,7 @@
 #define TIMER0_A1_MAX 80 //For 50% DCY
 #define TIMER1_A0_MAX 16000 //For ~1ms
 #define MS_COUNTER_MAX 1000 //For ~1s @ 16MHz
-#define ASCII_OFFSET 0x30
+//#define ASCII_OFFSET 0x30
 #define TS_MASK 0x000f
 #define TS_OFFSET_LOW 5
 #define TS_OFFSET_HIGH 8
