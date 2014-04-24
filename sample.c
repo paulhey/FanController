@@ -24,7 +24,7 @@ void UpdateSampleData(ADCSampleData *my_asd) {
 	my_asd->index++; //Move index forward
 	if (my_asd->index == ADC_MAX_SAMPLES) my_asd->index = 0; //roll over index if needed
 }
-
+/*
 void UpdateADCString(ADCSampleData *my_asd, char *my_string,
 		unsigned int my_stringlength, unsigned char my_offset) {
 	//TODO:if ((my_offset + 4) > my_stringlength) return;
@@ -41,3 +41,4 @@ void UpdateADCString(ADCSampleData *my_asd, char *my_string,
 	my_string[my_offset+2]=ten+ASCII_OFFSET;
 	my_string[my_offset+3]=one+ASCII_OFFSET;
 }
+*/

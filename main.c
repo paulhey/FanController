@@ -1,6 +1,7 @@
 #include <msp430.h> 
 #include "main.h"
 #include "sample.h"
+#include <stdio.h>
 /*
  * main.c
  * Paul Hey C0320318
@@ -29,7 +30,7 @@
 const char OutputString[] = { "Hello World\r\n" };
 const char EchoString[] = {
 		"Fan Controller Module:\r\nt => Current Temperature\r\nu => Hello\r\n" };
-//--------------------Char: "012345678 9 A"
+//-------------------Char: "012345678 9 A"
 char TemperatureString[] = "Raw: TTTT\r\n";
 
 struct {
@@ -215,10 +216,13 @@ __interrupt void ADC10_ISR(void) {
 	//TODO:FIX ME
 	UpdateSampleData(&GV.Temperature);
 	GV.TxTemp = GV.Temperature.average;
+	/*
 	UpdateADCString(&GV.Temperature,
 			&TemperatureString,
 			sizeof(TemperatureString),
 			TS_OFFSET_LOW);
+			*/
+	sprintf(TemperatureString,"Raw:%04d\r\n",GV.Temperature.average);
 }
 
 #pragma vector=TIMER1_A0_VECTOR
