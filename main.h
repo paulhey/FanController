@@ -48,7 +48,7 @@ void SetupUSART_A0(void);
 void SetupTIMER0_A(void);
 void SetupTIMER1_A(void);
 void SetupADC10(void);
-
+void ConvertRawToTemp(unsigned int my_raw, int *my_temp);
 void TransmitGVTxString(void);
 
 #endif /* MAIN_H_ */
