@@ -44,6 +44,8 @@ struct {
 	unsigned int TxStringLength;
 	ADCSampleData Temperature;
 	int degreesC;
+	unsigned int *p_ADC10CalData;
+//unsigned int ADC10Cal_TCSensor;
 } GV;
 
 void main(void) {
@@ -75,6 +77,7 @@ void init(void) {
 	GV.p_TxString = EchoString;
 	GV.TxStringLength = sizeof(EchoString);
 	GV.degreesC = 0;
+	GV.p_ADC10CalData = (unsigned int *) &TLV_ADC10_1_TAG;
 
 	P1DIR = PxDIR_ALL_OUT;
 	P1OUT = PxOUT_ALL_OUT;
@@ -128,18 +131,22 @@ void SetupADC10(void) {
 	GV.Temperature.calibrated = ADC10MEM;  	//Initialize samples array
 	InitializeSamples(&GV.Temperature);
 	GV.TxTemp = GV.Temperature.calibrated;
+	ConvertRawToTemp(GV.Temperature.average, &(GV.degreesC));
 }
 
-void TransmitGVTxString(void){
+void TransmitGVTxString(void) {
 	GV.Tx_i = 0;
 	IE2 |= UCA0TXIE;	// Enable USCI_A0 TX interrupt
 	UCA0TXBUF = GV.p_TxString[GV.Tx_i++];
 }
 
-void ConvertRawToTemp(unsigned int my_raw, int *my_temp){
-	my_temp = my_raw;//TODO: Here
+void ConvertRawToTemp(unsigned int my_raw, int *my_temp) {
+	unsigned int h = *(GV.p_ADC10CalData + CAL_ADC_15T85 + 1);
+	unsigned int l = *(GV.p_ADC10CalData + CAL_ADC_15T30 + 1);
+	*my_temp = (unsigned int) ((my_raw - l) * (85 - 35));	//TODO: Here
+	*my_temp /= (h-l);
+	*my_temp += 30;
 }
-
 
 //ISRs=================================================================
 
@@ -221,8 +228,7 @@ __interrupt void ADC10_ISR(void) {
 	UpdateSampleData(&GV.Temperature);
 	GV.TxTemp = GV.Temperature.average;
 
-	UpdateADCString(&GV.Temperature,
-			TemperatureString,
+	UpdateADCString(&GV.Temperature, TemperatureString,
 			sizeof(TemperatureString),
 			TS_OFFSET_LOW);
 
