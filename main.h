@@ -22,12 +22,14 @@
 #define MOSFET BIT3
 #define TIMER0_A0_MAX 256 //For ~0.01ms @ 16MHz
 #define TIMER0_A1_MAX 80 //For 50% DCY
+#define TIMER0_A1_STEP 26
 #define TIMER1_A0_MAX 16000 //For ~1ms
 #define MS_COUNTER_MAX 1000 //For ~1s @ 16MHz
 //#define ASCII_OFFSET 0x30
 #define TS_MASK 0x000f
-#define TS_OFFSET_LOW 5
-#define TS_OFFSET_HIGH 8
+#define TX_TEMP_OFFSET 5
+#define DEGREESC_OFFSET 13
+#define PWM_DUTY_LEVEL_OFFSET 47
 
 #define LEDS_DIR P1DIR
 #define LEDS_OUT P1OUT

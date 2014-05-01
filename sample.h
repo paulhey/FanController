@@ -28,6 +28,6 @@ typedef struct{
 
 void InitializeSamples(ADCSampleData *my_asd);
 void UpdateSampleData(ADCSampleData *my_asd);
-void UpdateADCString(ADCSampleData *my_asd, char *my_string, unsigned int my_stringlength, unsigned char my_offset);
+void UpdateADCString(ADC_SAMPLE_TYPE my_data, char *my_string, unsigned int my_stringlength, unsigned char my_offset);
 
 #endif /* SAMPLE_H_ */

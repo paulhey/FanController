@@ -25,11 +25,11 @@ void UpdateSampleData(ADCSampleData *my_asd) {
 	if (my_asd->index == ADC_MAX_SAMPLES) my_asd->index = 0; //roll over index if needed
 }
 
-void UpdateADCString(ADCSampleData *my_asd, char *my_string,
+void UpdateADCString(ADC_SAMPLE_TYPE my_data, char *my_string,
 		unsigned int my_stringlength, unsigned char my_offset) {
 	//TODO:if ((my_offset + 4) > my_stringlength) return;
 	unsigned char thousand = 0, hundred = 0, ten = 0, one = 0;
-	ADC_SAMPLE_TYPE temp = (my_asd->average);
+	ADC_SAMPLE_TYPE temp = (my_data);
 
 	//RANGES: 10 bits is 0-1023 & 12 bits is 0-4096
 	thousand = temp / 1000;// [0-4] in [0-255]

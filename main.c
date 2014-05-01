@@ -30,8 +30,9 @@
 const char OutputString[] = { "Hello World\r\n" };
 const char EchoString[] = {
 		"Fan Controller Module:\r\nt => Current Temperature\r\nu => Hello\r\n" };
-//-------------------Char: "012345678 9 A"
-char TemperatureString[] = "Raw: TTTT -> ttt Degrees C\r\n";
+//						    0         1         2         3         4
+//-------------------Char: "012345678901234567890123456789012345678901234567 8 9"
+char TemperatureString[] = "Raw: TTTT -> tttt Degrees C @ Duty Cycle Level n\r\n";
 
 struct {
 
@@ -45,7 +46,11 @@ struct {
 	ADCSampleData Temperature;
 	int degreesC;
 	unsigned int *p_ADC10CalData;
-//unsigned int ADC10Cal_TCSensor;
+	//Temperature = (RawADC-CAL_ADC_15T30) x [ (85-30)/(CAL_ADC_15T85-CAL_ADC_15T30)] + 30
+	// (=) 		  = [((RawADC-Low) x 50)/(High-Low)]+30
+	unsigned int Low;
+	unsigned int High;
+	unsigned char pwmDutyLevel;
 } GV;
 
 void main(void) {
@@ -78,6 +83,9 @@ void init(void) {
 	GV.TxStringLength = sizeof(EchoString);
 	GV.degreesC = 0;
 	GV.p_ADC10CalData = (unsigned int *) &TLV_ADC10_1_TAG;
+	GV.High = *(GV.p_ADC10CalData + CAL_ADC_15T85 + 1);
+	GV.Low = *(GV.p_ADC10CalData + CAL_ADC_15T30 + 1);
+	GV.pwmDutyLevel = 5;
 
 	P1DIR = PxDIR_ALL_OUT;
 	P1OUT = PxOUT_ALL_OUT;
@@ -103,7 +111,7 @@ void SetupUSART_A0(void) {
 
 void SetupTIMER0_A(void) {
 	TA0CCR0 = TIMER0_A0_MAX;
-	TA0CCR1 = TIMER0_A0_MAX >> 1;  	//For 50% Duty Cycle
+	TA0CCR1 = TIMER0_A1_STEP * GV.pwmDutyLevel;  	//For ~50% Duty Cycle
 	TA0CCTL0 |= CCIE;
 	TA0CCTL1 |= CCIE;
 	TA0CTL = TASSEL_2 + MC_1 + TACLR;  	//SMCLK, UP, CLEAR
@@ -141,11 +149,17 @@ void TransmitGVTxString(void) {
 }
 
 void ConvertRawToTemp(unsigned int my_raw, int *my_temp) {
-	unsigned int h = *(GV.p_ADC10CalData + CAL_ADC_15T85 + 1);
-	unsigned int l = *(GV.p_ADC10CalData + CAL_ADC_15T30 + 1);
-	*my_temp = (unsigned int) ((my_raw - l) * (85 - 35));	//TODO: Here
-	*my_temp /= (h-l);
-	*my_temp += 30;
+	int t1, t2, t3, t4, t5;
+	t1 = my_raw - GV.Low;
+	t2 = t1 * 50;
+	t3 = GV.High - GV.Low;
+	t4 = t2 / t3;
+	t5 = t4 + 30;
+	*my_temp = t5;
+//my_temp = (((my_raw-GV.Low) * 50)/(GV.High-GV.Low))+30;
+//my_temp = (unsigned int) ((my_raw - l) * (85 - 35));	//TODO: Here
+//my_temp /= (h-l);
+//my_temp += 30;
 }
 
 //ISRs=================================================================
@@ -160,8 +174,8 @@ __interrupt void USCI0_TX_ISR(void) {
 
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0_RX_ISR(void) {
-	//while(!(IFG2&UCA0TXIFG));
-	//UCA0TXBUF = UCA0RXBUF;
+//while(!(IFG2&UCA0TXIFG));
+//UCA0TXBUF = UCA0RXBUF;
 	GV.RxBuffer = UCA0RXBUF;
 	switch (GV.RxBuffer) {
 		case 'u':	//Hello World
@@ -179,6 +193,20 @@ __interrupt void USCI0_RX_ISR(void) {
 			GV.TxStringLength = sizeof(TemperatureString);
 			TransmitGVTxString();
 			break;
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+			GV.pwmDutyLevel = GV.RxBuffer - ASCII_OFFSET;
+			break;
+		case '0':
+			GV.pwmDutyLevel = 10;
+			break;
 		default:
 			UCA0TXBUF = '\r';
 			break;
@@ -189,6 +217,7 @@ __interrupt void USCI0_RX_ISR(void) {
 __interrupt void TIMER0_A0_ISR(void) {
 	P1OUT |= LED1;
 	P2OUT |= MOSFET;
+	TA0CCR1 = TIMER0_A1_STEP * GV.pwmDutyLevel;//Updates DUTY Cycle
 }
 
 /* The TACCR1 CCIFG, TACCR2 CCIFG, and TAIFG flags are prioritized and combined to source a single
@@ -224,15 +253,19 @@ __interrupt void TIMER0_A1_ISR(void) {
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void) {
 	GV.Temperature.current = ADC10MEM;
-	//TODO:FIX ME
 	UpdateSampleData(&GV.Temperature);
 	GV.TxTemp = GV.Temperature.average;
+	ConvertRawToTemp(GV.TxTemp, &(GV.degreesC));
 
-	UpdateADCString(&GV.Temperature, TemperatureString,
-			sizeof(TemperatureString),
-			TS_OFFSET_LOW);
+	UpdateADCString(GV.TxTemp, TemperatureString, sizeof(TemperatureString),
+	TX_TEMP_OFFSET);
 
-	//sprintf(TemperatureString,"Raw:%04d\r\n",GV.Temperature.average);
+	UpdateADCString(GV.degreesC, TemperatureString, sizeof(TemperatureString),
+	DEGREESC_OFFSET);
+
+	TemperatureString[PWM_DUTY_LEVEL_OFFSET] = GV.pwmDutyLevel + ASCII_OFFSET;
+
+//sprintf(TemperatureString,"Raw:%04d\r\n",GV.Temperature.average);
 }
 
 #pragma vector=TIMER1_A0_VECTOR
@@ -243,10 +276,12 @@ __interrupt void TIMER1_A0_ISR(void) {
 		P1OUT ^= LED2;
 		GV.ms_Counter = 0;	//Reset Counter
 	}
-	//Trigger next ADC? ADC10CTL0 |= ENC + ADC10SC;
+//Trigger next ADC? ADC10CTL0 |= ENC + ADC10SC;
 	if (!(ADC10CTL0 & ADC10SC)) {
 		ADC10CTL0 |= ENC + ADC10SC;
 	}
+
+
 }
 
 /*
