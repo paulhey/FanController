@@ -29,6 +29,7 @@
 #define TS_MASK 0x000f
 #define TX_TEMP_OFFSET 5
 #define DEGREESC_OFFSET 13
+#define TARGET_TEMP 25
 #define PWM_DUTY_LEVEL_OFFSET 47
 
 #define LEDS_DIR P1DIR
@@ -39,11 +40,12 @@
 
 #define ADC10_REF_SETTLE_TIME 16000//1us @ 16MHz?
 
-/*
+
 typedef enum{
-	PWM_MODE = 0,
-	UART_MODE
-}TimerMode;*/
+	_AUTO_MODE = 0,
+	_MANUAL_MODE,
+	_SETUP_MODE
+}SystemMode;
 
 void init(void);
 void SetupUSART_A0(void);

@@ -32,7 +32,8 @@ const char EchoString[] = {
 		"Fan Controller Module:\r\nt => Current Temperature\r\nu => Hello\r\n" };
 //						    0         1         2         3         4
 //-------------------Char: "012345678901234567890123456789012345678901234567 8 9"
-char TemperatureString[] = "Raw: TTTT -> tttt Degrees C @ Duty Cycle Level n\r\n";
+char TemperatureString[] =
+		"Raw: TTTT -> tttt Degrees C @ Duty Cycle Level n\r\n";
 
 struct {
 
@@ -51,6 +52,7 @@ struct {
 	unsigned int Low;
 	unsigned int High;
 	unsigned char pwmDutyLevel;
+	SystemMode sm;
 } GV;
 
 void main(void) {
@@ -86,6 +88,7 @@ void init(void) {
 	GV.High = *(GV.p_ADC10CalData + CAL_ADC_15T85 + 1);
 	GV.Low = *(GV.p_ADC10CalData + CAL_ADC_15T30 + 1);
 	GV.pwmDutyLevel = 5;
+	GV.sm = _AUTO_MODE;
 
 	P1DIR = PxDIR_ALL_OUT;
 	P1OUT = PxOUT_ALL_OUT;
@@ -202,10 +205,26 @@ __interrupt void USCI0_RX_ISR(void) {
 		case '7':
 		case '8':
 		case '9':
-			GV.pwmDutyLevel = GV.RxBuffer - ASCII_OFFSET;
+			if (GV.sm == _SETUP_MODE) {
+				GV.pwmDutyLevel = GV.RxBuffer - ASCII_OFFSET;
+			}
 			break;
 		case '0':
-			GV.pwmDutyLevel = 10;
+			if (GV.sm == _SETUP_MODE) {
+				GV.pwmDutyLevel = 10;
+			}
+			break;
+		case 'a':
+			GV.sm = _AUTO_MODE;
+			UCA0TXBUF = GV.RxBuffer;
+			break;
+		case 's':
+			GV.sm = _SETUP_MODE;
+			UCA0TXBUF = GV.RxBuffer;
+			break;
+		case 'm':
+			GV.sm = _MANUAL_MODE;
+			UCA0TXBUF = GV.RxBuffer;
 			break;
 		default:
 			UCA0TXBUF = '\r';
@@ -217,7 +236,7 @@ __interrupt void USCI0_RX_ISR(void) {
 __interrupt void TIMER0_A0_ISR(void) {
 	P1OUT |= LED1;
 	P2OUT |= MOSFET;
-	TA0CCR1 = TIMER0_A1_STEP * GV.pwmDutyLevel;//Updates DUTY Cycle
+	TA0CCR1 = TIMER0_A1_STEP * GV.pwmDutyLevel;	//Updates DUTY Cycle
 }
 
 /* The TACCR1 CCIFG, TACCR2 CCIFG, and TAIFG flags are prioritized and combined to source a single
@@ -263,7 +282,8 @@ __interrupt void ADC10_ISR(void) {
 	UpdateADCString(GV.degreesC, TemperatureString, sizeof(TemperatureString),
 	DEGREESC_OFFSET);
 
-	TemperatureString[PWM_DUTY_LEVEL_OFFSET] = GV.pwmDutyLevel + ASCII_OFFSET;
+	TemperatureString[PWM_DUTY_LEVEL_OFFSET] = (
+			GV.pwmDutyLevel == 10 ? '0' : GV.pwmDutyLevel + ASCII_OFFSET);
 
 //sprintf(TemperatureString,"Raw:%04d\r\n",GV.Temperature.average);
 }
@@ -280,7 +300,17 @@ __interrupt void TIMER1_A0_ISR(void) {
 	if (!(ADC10CTL0 & ADC10SC)) {
 		ADC10CTL0 |= ENC + ADC10SC;
 	}
-
+//Handle System State Machine
+	switch (GV.sm) {
+		case _AUTO_MODE:
+			break;
+		case _MANUAL_MODE:
+			break;
+		case _SETUP_MODE:
+			break;
+		default:
+			break;
+	}
 
 }
 

@@ -1,10 +1,10 @@
 ******************************************************************************
                   MSP430 Linker PC v4.3.1                      
 ******************************************************************************
->> Linked Thu May 01 15:53:03 2014
+>> Linked Mon May 05 16:43:12 2014
 
 OUTPUT FILE NAME:   <FanController.out>
-ENTRY POINT SYMBOL: "_c_int00"  address: 0000c538
+ENTRY POINT SYMBOL: "_c_int00"  address: 0000c588
 
 
 MEMORY CONFIGURATION
@@ -14,12 +14,12 @@ MEMORY CONFIGURATION
   SFR                   00000000   00000010  00000000  00000010  RWIX
   PERIPHERALS_8BIT      00000010   000000f0  00000000  000000f0  RWIX
   PERIPHERALS_16BIT     00000100   00000100  00000000  00000100  RWIX
-  RAM                   00000200   00000200  000000b7  00000149  RWIX
+  RAM                   00000200   00000200  000000b9  00000147  RWIX
   INFOD                 00001000   00000040  00000000  00000040  RWIX
   INFOC                 00001040   00000040  00000000  00000040  RWIX
   INFOB                 00001080   00000040  00000000  00000040  RWIX
   INFOA                 000010c0   00000040  00000000  00000040  RWIX
-  FLASH                 0000c000   00003fe0  00000694  0000394c  RWIX
+  FLASH                 0000c000   00003fe0  000006e4  000038fc  RWIX
   INT00                 0000ffe0   00000002  00000000  00000002  RWIX
   INT01                 0000ffe2   00000002  00000000  00000002  RWIX
   INT02                 0000ffe4   00000002  00000002  00000000  RWIX
@@ -46,67 +46,67 @@ section   page    origin      length       input sections
 .init_array 
 *          0    0000c000    00000000     UNINITIALIZED
 
-.bss       0    00000200    00000034     UNINITIALIZED
-                  00000200    00000034     (.common:GV)
+.bss       0    00000200    00000036     UNINITIALIZED
+                  00000200    00000036     (.common:GV)
 
 .TI.noinit 
 *          0    00000200    00000000     UNINITIALIZED
 
-.data      0    00000234    00000033     UNINITIALIZED
-                  00000234    00000033     main.obj (.data:TemperatureString)
+.data      0    00000236    00000033     UNINITIALIZED
+                  00000236    00000033     main.obj (.data:TemperatureString)
 
 .TI.persistent 
-*          0    00000234    00000000     UNINITIALIZED
+*          0    00000236    00000000     UNINITIALIZED
 
 .stack     0    000003b0    00000050     UNINITIALIZED
                   000003b0    00000002     rts430_eabi.lib : boot.obj (.stack)
                   000003b2    0000004e     --HOLE--
 
-.text      0    0000c000    000005fc     
-                  0000c000    00000090     main.obj (.text:USCI0_RX_ISR)
-                  0000c090    00000088     sample.obj (.text:UpdateADCString)
-                  0000c118    0000006a     main.obj (.text:ADC10_ISR)
-                  0000c182    00000066     main.obj (.text:init)
-                  0000c1e8    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
-                  0000c246    0000005e                     : autoinit.obj (.text:_auto_init)
-                  0000c2a4    0000005c                     : lsr32.obj (.text:l_lsr_const)
-                  0000c300    0000004a     sample.obj (.text:UpdateSampleData)
-                  0000c34a    00000040     main.obj (.text:SetupADC10)
-                  0000c38a    0000003c     sample.obj (.text:InitializeSamples)
-                  0000c3c6    0000003c     main.obj (.text:main)
-                  0000c402    0000002e     main.obj (.text:TIMER0_A0_ISR)
-                  0000c430    0000002c     rts430_eabi.lib : div16s.obj (.text)
-                  0000c45c    0000002a     main.obj (.text:SetupTIMER0_A)
-                  0000c486    0000002a     main.obj (.text:USCI0_TX_ISR)
-                  0000c4b0    00000028     main.obj (.text:ConvertRawToTemp)
-                  0000c4d8    00000024     main.obj (.text:TIMER1_A0_ISR)
-                  0000c4fc    0000001e     main.obj (.text:SetupUSART_A0)
-                  0000c51a    0000001e     main.obj (.text:TransmitGVTxString)
-                  0000c538    0000001a     rts430_eabi.lib : boot.obj (.text:_c_int00_noexit)
-                  0000c552    00000016                     : div16u.obj (.text)
-                  0000c568    00000014     main.obj (.text:SetupTIMER1_A)
-                  0000c57c    00000014     rts430_eabi.lib : copy_zero_init.obj (.text:decompress:ZI:__TI_zero_init)
-                  0000c590    00000014                     : mult16.obj (.text)
-                  0000c5a4    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
-                  0000c5b6    00000012                     : memcpy.obj (.text:memcpy)
-                  0000c5c8    00000010     main.obj (.text:TIMER0_A1_ISR)
-                  0000c5d8    00000010     rts430_eabi.lib : epilog.obj (.text)
-                  0000c5e8    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
-                  0000c5ee    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
-                  0000c5f4    00000004                     : pre_init.obj (.text:_system_pre_init)
-                  0000c5f8    00000004                     : exit.obj (.text:abort)
+.text      0    0000c000    0000064c     
+                  0000c000    000000ce     main.obj (.text:USCI0_RX_ISR)
+                  0000c0ce    00000088     sample.obj (.text:UpdateADCString)
+                  0000c156    00000078     main.obj (.text:ADC10_ISR)
+                  0000c1ce    0000006a     main.obj (.text:init)
+                  0000c238    0000005e     rts430_eabi.lib : copy_decompress_rle.obj (.text:__TI_decompress_rle_core)
+                  0000c296    0000005e                     : autoinit.obj (.text:_auto_init)
+                  0000c2f4    0000005c                     : lsr32.obj (.text:l_lsr_const)
+                  0000c350    0000004a     sample.obj (.text:UpdateSampleData)
+                  0000c39a    00000040     main.obj (.text:SetupADC10)
+                  0000c3da    0000003c     sample.obj (.text:InitializeSamples)
+                  0000c416    0000003c     main.obj (.text:main)
+                  0000c452    0000002e     main.obj (.text:TIMER0_A0_ISR)
+                  0000c480    0000002c     rts430_eabi.lib : div16s.obj (.text)
+                  0000c4ac    0000002a     main.obj (.text:SetupTIMER0_A)
+                  0000c4d6    0000002a     main.obj (.text:USCI0_TX_ISR)
+                  0000c500    00000028     main.obj (.text:ConvertRawToTemp)
+                  0000c528    00000024     main.obj (.text:TIMER1_A0_ISR)
+                  0000c54c    0000001e     main.obj (.text:SetupUSART_A0)
+                  0000c56a    0000001e     main.obj (.text:TransmitGVTxString)
+                  0000c588    0000001a     rts430_eabi.lib : boot.obj (.text:_c_int00_noexit)
+                  0000c5a2    00000016                     : div16u.obj (.text)
+                  0000c5b8    00000014     main.obj (.text:SetupTIMER1_A)
+                  0000c5cc    00000014     rts430_eabi.lib : copy_zero_init.obj (.text:decompress:ZI:__TI_zero_init)
+                  0000c5e0    00000014                     : mult16.obj (.text)
+                  0000c5f4    00000012                     : copy_decompress_none.obj (.text:decompress:none:__TI_decompress_none)
+                  0000c606    00000012                     : memcpy.obj (.text:memcpy)
+                  0000c618    00000010     main.obj (.text:TIMER0_A1_ISR)
+                  0000c628    00000010     rts430_eabi.lib : epilog.obj (.text)
+                  0000c638    00000006                     : isr_trap.obj (.text:__TI_ISR_TRAP)
+                  0000c63e    00000006                     : copy_decompress_rle.obj (.text:decompress:rle24:__TI_decompress_rle24)
+                  0000c644    00000004                     : pre_init.obj (.text:_system_pre_init)
+                  0000c648    00000004                     : exit.obj (.text:abort)
 
-.const     0    0000c5fc    0000004e     
-                  0000c5fc    0000003f     main.obj (.const:.string:EchoString)
-                  0000c63b    00000001     --HOLE-- [fill = 0]
-                  0000c63c    0000000e     main.obj (.const:.string:OutputString)
+.const     0    0000c64c    0000004e     
+                  0000c64c    0000003f     main.obj (.const:.string:EchoString)
+                  0000c68b    00000001     --HOLE-- [fill = 0]
+                  0000c68c    0000000e     main.obj (.const:.string:OutputString)
 
-.cinit     0    0000c64a    0000004a     
-                  0000c64a    00000037     (.cinit..data.load) [load image]
-                  0000c681    00000001     --HOLE-- [fill = 0]
-                  0000c682    00000006     (__TI_handler_table)
-                  0000c688    00000004     (.cinit..bss.load) [load image, compression = zero_init]
-                  0000c68c    00000008     (__TI_cinit_table)
+.cinit     0    0000c69a    0000004a     
+                  0000c69a    00000037     (.cinit..data.load) [load image]
+                  0000c6d1    00000001     --HOLE-- [fill = 0]
+                  0000c6d2    00000006     (__TI_handler_table)
+                  0000c6d8    00000004     (.cinit..bss.load) [load image, compression = zero_init]
+                  0000c6dc    00000008     (__TI_cinit_table)
 
 PORT1      0    0000ffe4    00000002     
                   0000ffe4    00000002     rts430_eabi.lib : int02.obj (.int02)
@@ -157,14 +157,14 @@ NMI        0    0000fffc    00000002
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 0000c68c records: 2, size/record: 4, table size: 8
-	.data: load addr=0000c64a, load size=00000037 bytes, run addr=00000234, run size=00000033 bytes, compression=copy
-	.bss: load addr=0000c688, load size=00000004 bytes, run addr=00000200, run size=00000034 bytes, compression=zero_init
+__TI_cinit_table @ 0000c6dc records: 2, size/record: 4, table size: 8
+	.data: load addr=0000c69a, load size=00000037 bytes, run addr=00000236, run size=00000033 bytes, compression=copy
+	.bss: load addr=0000c6d8, load size=00000004 bytes, run addr=00000200, run size=00000036 bytes, compression=zero_init
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 0000c682 records: 3, size/record: 2, table size: 6
+__TI_handler_table @ 0000c6d2 records: 3, size/record: 2, table size: 6
 	index: 0, handler: __TI_zero_init
 	index: 1, handler: __TI_decompress_rle24
 	index: 2, handler: __TI_decompress_none
@@ -181,11 +181,11 @@ address    name
 00000049   ADC10DTC1
 000001b4   ADC10MEM
 000001bc   ADC10SA
-0000c118   ADC10_ISR
+0000c156   ADC10_ISR
 00000057   BCSCTL1
 00000058   BCSCTL2
 00000053   BCSCTL3
-0000c5f8   C$$EXIT
+0000c648   C$$EXIT
 00000059   CACTL1
 0000005a   CACTL2
 000010fb   CALBC1_12MHZ
@@ -197,9 +197,9 @@ address    name
 000010fe   CALDCO_1MHZ
 000010fc   CALDCO_8MHZ
 0000005b   CAPD
-0000c4b0   ConvertRawToTemp
+0000c500   ConvertRawToTemp
 00000056   DCOCTL
-0000c5fc   EchoString
+0000c64c   EchoString
 00000128   FCTL1
 0000012a   FCTL2
 0000012c   FCTL3
@@ -208,8 +208,8 @@ address    name
 00000001   IE2
 00000002   IFG1
 00000003   IFG2
-0000c38a   InitializeSamples
-0000c63c   OutputString
+0000c3da   InitializeSamples
+0000c68c   OutputString
 00000022   P1DIR
 00000025   P1IE
 00000024   P1IES
@@ -234,10 +234,10 @@ address    name
 00000010   P3REN
 0000001b   P3SEL
 00000043   P3SEL2
-0000c34a   SetupADC10
-0000c45c   SetupTIMER0_A
-0000c568   SetupTIMER1_A
-0000c4fc   SetupUSART_A0
+0000c39a   SetupADC10
+0000c4ac   SetupTIMER0_A
+0000c5b8   SetupTIMER1_A
+0000c54c   SetupUSART_A0
 00000172   TA0CCR0
 00000174   TA0CCR1
 00000176   TA0CCR2
@@ -256,16 +256,16 @@ address    name
 00000180   TA1CTL
 0000011e   TA1IV
 00000190   TA1R
-0000c402   TIMER0_A0_ISR
-0000c5c8   TIMER0_A1_ISR
-0000c4d8   TIMER1_A0_ISR
+0000c452   TIMER0_A0_ISR
+0000c618   TIMER0_A1_ISR
+0000c528   TIMER1_A0_ISR
 000010db   TLV_ADC10_1_LEN
 000010da   TLV_ADC10_1_TAG
 000010c0   TLV_CHECKSUM
 000010f7   TLV_DCO_30_LEN
 000010f6   TLV_DCO_30_TAG
-00000234   TemperatureString
-0000c51a   TransmitGVTxString
+00000236   TemperatureString
+0000c56a   TransmitGVTxString
 0000005d   UCA0ABCTL
 00000062   UCA0BR0
 00000063   UCA0BR1
@@ -288,22 +288,22 @@ address    name
 0000006d   UCB0STAT
 0000006f   UCB0TXBUF
 0000c000   USCI0_RX_ISR
-0000c486   USCI0_TX_ISR
-0000c090   UpdateADCString
-0000c300   UpdateSampleData
+0000c4d6   USCI0_TX_ISR
+0000c0ce   UpdateADCString
+0000c350   UpdateSampleData
 00000120   WDTCTL
 00000400   __STACK_END
 00000050   __STACK_SIZE
-0000c68c   __TI_CINIT_Base
-0000c694   __TI_CINIT_Limit
-0000c682   __TI_Handler_Table_Base
-0000c688   __TI_Handler_Table_Limit
+0000c6dc   __TI_CINIT_Base
+0000c6e4   __TI_CINIT_Limit
+0000c6d2   __TI_Handler_Table_Base
+0000c6d8   __TI_Handler_Table_Limit
 UNDEFED    __TI_INITARRAY_Base
 UNDEFED    __TI_INITARRAY_Limit
-0000c5e8   __TI_ISR_TRAP
+0000c638   __TI_ISR_TRAP
 00000001   __TI_args_main
-0000c5a4   __TI_decompress_none
-0000c5ee   __TI_decompress_rle24
+0000c5f4   __TI_decompress_none
+0000c63e   __TI_decompress_rle24
 00000001   __TI_exit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
@@ -317,47 +317,47 @@ UNDEFED    __TI_INITARRAY_Limit
 0000fff8   __TI_int12
 0000fffa   __TI_int13
 0000fffc   __TI_int14
-0000c57c   __TI_zero_init
+0000c5cc   __TI_zero_init
 ffffffff   __binit__
 ffffffff   __c_args__
-0000c430   __mspabi_divi
-0000c552   __mspabi_divu
-0000c5e4   __mspabi_func_epilog_1
-0000c5e2   __mspabi_func_epilog_2
-0000c5e0   __mspabi_func_epilog_3
-0000c5de   __mspabi_func_epilog_4
-0000c5dc   __mspabi_func_epilog_5
-0000c5da   __mspabi_func_epilog_6
-0000c5d8   __mspabi_func_epilog_7
-0000c590   __mspabi_mpyi
-0000c430   __mspabi_remi
-0000c552   __mspabi_remu
-0000c2f8   __mspabi_srll_1
-0000c2c2   __mspabi_srll_10
-0000c2bc   __mspabi_srll_11
-0000c2b6   __mspabi_srll_12
-0000c2b0   __mspabi_srll_13
-0000c2aa   __mspabi_srll_14
-0000c2a4   __mspabi_srll_15
-0000c2f2   __mspabi_srll_2
-0000c2ec   __mspabi_srll_3
-0000c2e6   __mspabi_srll_4
-0000c2e0   __mspabi_srll_5
-0000c2da   __mspabi_srll_6
-0000c2d4   __mspabi_srll_7
-0000c2ce   __mspabi_srll_8
-0000c2c8   __mspabi_srll_9
-0000c246   _auto_init
-0000c538   _c_int00
-0000c538   _c_int00_noexit
+0000c480   __mspabi_divi
+0000c5a2   __mspabi_divu
+0000c634   __mspabi_func_epilog_1
+0000c632   __mspabi_func_epilog_2
+0000c630   __mspabi_func_epilog_3
+0000c62e   __mspabi_func_epilog_4
+0000c62c   __mspabi_func_epilog_5
+0000c62a   __mspabi_func_epilog_6
+0000c628   __mspabi_func_epilog_7
+0000c5e0   __mspabi_mpyi
+0000c480   __mspabi_remi
+0000c5a2   __mspabi_remu
+0000c348   __mspabi_srll_1
+0000c312   __mspabi_srll_10
+0000c30c   __mspabi_srll_11
+0000c306   __mspabi_srll_12
+0000c300   __mspabi_srll_13
+0000c2fa   __mspabi_srll_14
+0000c2f4   __mspabi_srll_15
+0000c342   __mspabi_srll_2
+0000c33c   __mspabi_srll_3
+0000c336   __mspabi_srll_4
+0000c330   __mspabi_srll_5
+0000c32a   __mspabi_srll_6
+0000c324   __mspabi_srll_7
+0000c31e   __mspabi_srll_8
+0000c318   __mspabi_srll_9
+0000c296   _auto_init
+0000c588   _c_int00
+0000c588   _c_int00_noexit
 0000fffe   _reset_vector
 000003b0   _stack
-0000c5f4   _system_pre_init
-0000c5f8   abort
+0000c644   _system_pre_init
+0000c648   abort
 ffffffff   binit
-0000c182   init
-0000c3c6   main
-0000c5b6   memcpy
+0000c1ce   init
+0000c416   main
+0000c606   memcpy
 
 
 GLOBAL SYMBOLS: SORTED BY Symbol Address 
@@ -453,7 +453,7 @@ address    name
 000001b4   ADC10MEM
 000001bc   ADC10SA
 00000200   GV
-00000234   TemperatureString
+00000236   TemperatureString
 000003b0   _stack
 00000400   __STACK_END
 000010c0   TLV_CHECKSUM
@@ -470,66 +470,66 @@ address    name
 000010fe   CALDCO_1MHZ
 000010ff   CALBC1_1MHZ
 0000c000   USCI0_RX_ISR
-0000c090   UpdateADCString
-0000c118   ADC10_ISR
-0000c182   init
-0000c246   _auto_init
-0000c2a4   __mspabi_srll_15
-0000c2aa   __mspabi_srll_14
-0000c2b0   __mspabi_srll_13
-0000c2b6   __mspabi_srll_12
-0000c2bc   __mspabi_srll_11
-0000c2c2   __mspabi_srll_10
-0000c2c8   __mspabi_srll_9
-0000c2ce   __mspabi_srll_8
-0000c2d4   __mspabi_srll_7
-0000c2da   __mspabi_srll_6
-0000c2e0   __mspabi_srll_5
-0000c2e6   __mspabi_srll_4
-0000c2ec   __mspabi_srll_3
-0000c2f2   __mspabi_srll_2
-0000c2f8   __mspabi_srll_1
-0000c300   UpdateSampleData
-0000c34a   SetupADC10
-0000c38a   InitializeSamples
-0000c3c6   main
-0000c402   TIMER0_A0_ISR
-0000c430   __mspabi_divi
-0000c430   __mspabi_remi
-0000c45c   SetupTIMER0_A
-0000c486   USCI0_TX_ISR
-0000c4b0   ConvertRawToTemp
-0000c4d8   TIMER1_A0_ISR
-0000c4fc   SetupUSART_A0
-0000c51a   TransmitGVTxString
-0000c538   _c_int00
-0000c538   _c_int00_noexit
-0000c552   __mspabi_divu
-0000c552   __mspabi_remu
-0000c568   SetupTIMER1_A
-0000c57c   __TI_zero_init
-0000c590   __mspabi_mpyi
-0000c5a4   __TI_decompress_none
-0000c5b6   memcpy
-0000c5c8   TIMER0_A1_ISR
-0000c5d8   __mspabi_func_epilog_7
-0000c5da   __mspabi_func_epilog_6
-0000c5dc   __mspabi_func_epilog_5
-0000c5de   __mspabi_func_epilog_4
-0000c5e0   __mspabi_func_epilog_3
-0000c5e2   __mspabi_func_epilog_2
-0000c5e4   __mspabi_func_epilog_1
-0000c5e8   __TI_ISR_TRAP
-0000c5ee   __TI_decompress_rle24
-0000c5f4   _system_pre_init
-0000c5f8   C$$EXIT
-0000c5f8   abort
-0000c5fc   EchoString
-0000c63c   OutputString
-0000c682   __TI_Handler_Table_Base
-0000c688   __TI_Handler_Table_Limit
-0000c68c   __TI_CINIT_Base
-0000c694   __TI_CINIT_Limit
+0000c0ce   UpdateADCString
+0000c156   ADC10_ISR
+0000c1ce   init
+0000c296   _auto_init
+0000c2f4   __mspabi_srll_15
+0000c2fa   __mspabi_srll_14
+0000c300   __mspabi_srll_13
+0000c306   __mspabi_srll_12
+0000c30c   __mspabi_srll_11
+0000c312   __mspabi_srll_10
+0000c318   __mspabi_srll_9
+0000c31e   __mspabi_srll_8
+0000c324   __mspabi_srll_7
+0000c32a   __mspabi_srll_6
+0000c330   __mspabi_srll_5
+0000c336   __mspabi_srll_4
+0000c33c   __mspabi_srll_3
+0000c342   __mspabi_srll_2
+0000c348   __mspabi_srll_1
+0000c350   UpdateSampleData
+0000c39a   SetupADC10
+0000c3da   InitializeSamples
+0000c416   main
+0000c452   TIMER0_A0_ISR
+0000c480   __mspabi_divi
+0000c480   __mspabi_remi
+0000c4ac   SetupTIMER0_A
+0000c4d6   USCI0_TX_ISR
+0000c500   ConvertRawToTemp
+0000c528   TIMER1_A0_ISR
+0000c54c   SetupUSART_A0
+0000c56a   TransmitGVTxString
+0000c588   _c_int00
+0000c588   _c_int00_noexit
+0000c5a2   __mspabi_divu
+0000c5a2   __mspabi_remu
+0000c5b8   SetupTIMER1_A
+0000c5cc   __TI_zero_init
+0000c5e0   __mspabi_mpyi
+0000c5f4   __TI_decompress_none
+0000c606   memcpy
+0000c618   TIMER0_A1_ISR
+0000c628   __mspabi_func_epilog_7
+0000c62a   __mspabi_func_epilog_6
+0000c62c   __mspabi_func_epilog_5
+0000c62e   __mspabi_func_epilog_4
+0000c630   __mspabi_func_epilog_3
+0000c632   __mspabi_func_epilog_2
+0000c634   __mspabi_func_epilog_1
+0000c638   __TI_ISR_TRAP
+0000c63e   __TI_decompress_rle24
+0000c644   _system_pre_init
+0000c648   C$$EXIT
+0000c648   abort
+0000c64c   EchoString
+0000c68c   OutputString
+0000c6d2   __TI_Handler_Table_Base
+0000c6d8   __TI_Handler_Table_Limit
+0000c6dc   __TI_CINIT_Base
+0000c6e4   __TI_CINIT_Limit
 0000ffe4   __TI_int02
 0000ffe6   __TI_int03
 0000ffea   __TI_int05
