@@ -34,7 +34,7 @@ const char EchoString[] =
 		t => Current Temperature\r\n\
 		u => Hello\r\n\
 		e => Echo this prompt\r\n\
-		a => Automatic Mode (Default, 25 \xB0C)\r\n\
+		a => Automatic Mode (Default, 25 \xB0 C)\r\n\
 		s => Setup Mode \r\n\
 		m => Manual Mode \r\n" };
 //						    0         1         2         3         4
@@ -59,6 +59,8 @@ struct {
 	ADCSampleData Temperature;
 	int degreesC;
 	int lowThresholdC;
+	int diffC;
+	int DC_slope;
 	unsigned int *p_ADC10CalData;
 	//Temperature = (RawADC-CAL_ADC_15T30) x [ (85-30)/(CAL_ADC_15T85-CAL_ADC_15T30)] + 30
 	// (=) 		  = [((RawADC-Low) x 50)/(High-Low)]+30
@@ -98,11 +100,13 @@ void init(void) {
 	GV.TxStringLength = sizeof(EchoString);
 	GV.degreesC = 0;
 	GV.lowThresholdC = 25;
+	GV.diffC = GV.degreesC - GV.lowThresholdC;
+	GV.DC_slope = 2;
 	GV.p_ADC10CalData = (unsigned int *) &TLV_ADC10_1_TAG;
 	GV.High = *(GV.p_ADC10CalData + CAL_ADC_15T85 + 1);
 	GV.Low = *(GV.p_ADC10CalData + CAL_ADC_15T30 + 1);
 	GV.pwmDutyLevel = 5;
-	GV.sm = _AUTO_MODE;
+	GV.sm = _MANUAL_MODE;
 
 	P1DIR = PxDIR_ALL_OUT;
 	P1OUT = PxOUT_ALL_OUT;
@@ -212,6 +216,7 @@ __interrupt void USCI0_RX_ISR(void) {
 				TransmitGVTxString();
 				break;
 			case 'l': //SETUP_MODE: Display message and prompt
+				GV//TODO
 				if (GV.sm == _SETUP_MODE) {
 					GV.p_TxString = LowString;
 					GV.TxStringLength = sizeof(LowString);
@@ -284,7 +289,11 @@ __interrupt void TIMER0_A0_ISR(void) {
 	if (GV.sm == _MANUAL_MODE) {
 		TA0CCR1 = (TIMER0_A1_STEP * GV.pwmDutyLevel) + 1;	//Updates DUTY Cycle
 	} else {
-		TA0CCR1 = (TIMER0_A1_STEP + 1 ) i//TODO
+		if (GV.diffC > 0) {
+			TA0CCR1 = (TIMER0_A1_STEP + 1 + (unsigned int)GV.DC_slope);	//TODO
+		} else {
+			TA0CCR1 = (TIMER0_A1_STEP + 1);
+		}
 	}
 }
 
@@ -301,7 +310,8 @@ __interrupt void TIMER0_A0_ISR(void) {
  * */
 
 #pragma vector=TIMER0_A1_VECTOR
-__interrupt void TIMER0_A1_ISR(void) {
+__interrupt
+void TIMER0_A1_ISR(void) {
 	switch (__even_in_range(TA0IV, TA0IV_TAIFG)) {
 		case TA0IV_NONE: // No Interrupt pending
 			break;
@@ -319,7 +329,8 @@ __interrupt void TIMER0_A1_ISR(void) {
 }
 
 #pragma vector=ADC10_VECTOR
-__interrupt void ADC10_ISR(void) {
+__interrupt
+void ADC10_ISR(void) {
 	GV.Temperature.current = ADC10MEM;
 	UpdateSampleData(&GV.Temperature);
 	GV.TxTemp = GV.Temperature.average;
@@ -337,7 +348,8 @@ __interrupt void ADC10_ISR(void) {
 }
 
 #pragma vector=TIMER1_A0_VECTOR
-__interrupt void TIMER1_A0_ISR(void) {
+__interrupt
+void TIMER1_A0_ISR(void) {
 	GV.ms_Counter++;
 	if (GV.ms_Counter == MS_COUNTER_MAX) {	//Toggle every second
 
@@ -345,22 +357,24 @@ __interrupt void TIMER1_A0_ISR(void) {
 		GV.ms_Counter = 0;	//Reset Counter
 	}
 	ConvertRawToTemp(GV.Temperature.average, &(GV.degreesC));
-
+	GV.diffC = GV.degreesC - GV.lowThresholdC;
+	GV.DC_slope = ((180 * GV.diffC) / 75);
 //Trigger next ADC? ADC10CTL0 |= ENC + ADC10SC;
 	if (!(ADC10CTL0 & ADC10SC)) {
 		ADC10CTL0 |= ENC + ADC10SC;
 	}
 //Handle System State Machine
-	switch (GV.sm) {
-		case _AUTO_MODE:
-			break;
-		case _MANUAL_MODE:
-			break;
-		case _SETUP_MODE:
-			break;
-		default:
-			break;
-	}
+	/*
+	 switch (GV.sm) {
+	 case _AUTO_MODE:
+	 break;
+	 case _MANUAL_MODE:
+	 break;
+	 case _SETUP_MODE:
+	 break;
+	 default:
+	 break;
+	 }*/
 
 }
 
