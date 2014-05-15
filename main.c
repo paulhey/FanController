@@ -5,8 +5,26 @@
 /*
  * main.c
  * Paul Hey C0320318
- * FanController - Version[0.3]
+ * FanController - Version[0.4]
  *
+ * [2014 - MAY - 15]
+ * 0.4
+ *
+ * System has a state machine. There are several modes (Auto, Debug-Auto, Manual, Setup)
+ * The Automatic mode is based on the following:
+ * 		- The PWM duty cycle is proportional to the temperature above a minimum threshold.
+ * 		- At and below the minimum threshold, the duty cycle is ~10% (21 on, 179 off)
+ * 		- The max duty cycle is at around 100 deg C.
+ * The Manual mode allows the user to select one of 10 fixed PWM levels (1-10, selected as {1234567890})
+ * The Debug-Auto mode displays the TemperatureString (displays current system information) continuously.
+ * Otherwise, pressing 't' will do the same manually.
+ *
+ * The Setup mode will allow the user to specifiy the minimum threshold temperature in degrees C.
+ * Press 's' to get into setup mode and press 'l' to enter the degrees (00-99) and press enter to confirm.
+ *
+ * TODO:	[ ] Port to MSP430F5529!
+ *
+ * 0.3.2
  * TODO:	[X] Lower PWM frequency to 25KHz. Small fan is too noisy, even at 50KHz.
  * TODO:	[ ] Read Temp. Data every ms? (Setup Timer1_A0 for this, Toggle LED2)
  * TODO:	[ ] Print Temp. Data out every 1s over UART
@@ -40,7 +58,9 @@ const char EchoString[] =
 		l => Under Setup Mode, Low Threshold input\r\n" };
 //						     0          1            2            3         4		  5
 //-------------------Char: "0 1 234567890123   456789012345   6789012345678901234567890123456789"
-char TemperatureString[] = "\r\n[TTTT->tttt\xB0 C] TL[tttt\xB0 C] PWM[n] or RAW[llll] Mode[m]";
+//This is the only mutable string, Used to display system information.
+char TemperatureString[] =
+		"\r\n[TTTT->tttt\xB0 C] TL[tttt\xB0 C] PWM[n] or RAW[llll] Mode[m]";
 const char SetupString[] = "\r\nSetup Mode";
 const char AutoString[] = "\r\nAuto Mode";
 const char DebugString[] = "\r\nDebug Mode";
@@ -49,27 +69,28 @@ const char LowString[] =
 		"\r\nEnter Low Threshold in \xB0 C (30% duty cycle below this point, default is 25\xB0 ):"; //ten, one, enter=="\r"?
 const char ErrorString[] = "\r\nERROR: Input must be between 00-99";
 
+//Since the who thing is run from within interrupts, a Global Variable Struct is used.
 struct {
-	unsigned char RxBuffer;
-	unsigned char RxTemp;
-	unsigned int TxTemp;
-	unsigned int ms_Counter;	//Keep track of current ms count
-	unsigned char TS_i;
-	unsigned int Tx_i;
-	const char *p_TxString;
-	unsigned int TxStringLength;
-	ADCSampleData Temperature;
-	int degreesC;
-	int lowThresholdC;
-	int diffC;
-	int DC_slope;
-	unsigned int *p_ADC10CalData;
+	unsigned char RxBuffer;//Data from UART RxBuffer
+	unsigned char RxTemp;//Temp variable used within UART interrupt
+	unsigned int ADCTemp;//Temp variable used to store ADC values
+	unsigned int ms_Counter;//Keep track of current ms count (Timer1)
+	//unsigned char TS_i;
+	unsigned int Tx_i;//Transmit index (UART)
+	const char *p_TxString;//Transmit String Pointer
+	unsigned int TxStringLength;//Transmit String Length
+	ADCSampleData Temperature;//ADC Data Struct
+	int degreesC;//Temperature converted to deg. C from Raw
+	int lowThresholdC;//Threshold Temperature (above 10% duty cycle)
+	int diffC;//Used to calculate DC_slope, == degreesC - lowThresholdC
+	int DC_slope;// Duty Cycle increase based on SLOPE_RATE x diffC for diffC > 0
+	unsigned int *p_ADC10CalData;//Pointer for location of MSP430 ADC10 Temperature sensor calibration values
 	//Temperature = (RawADC-CAL_ADC_15T30) x [ (85-30)/(CAL_ADC_15T85-CAL_ADC_15T30)] + 30
 	// (=) 		  = [((RawADC-Low) x 50)/(High-Low)]+30
-	unsigned int Low;
+	unsigned int Low;//Low & High are used to convert Raw Temp values to deg. C
 	unsigned int High;
-	unsigned char pwmDutyLevel;
-	SystemMode sm;
+	unsigned char pwmDutyLevel;//Discrete PWM levels for manual mode
+	SystemMode sm;//Enum used for system machine state
 } GV;
 
 void main(void) {
@@ -82,7 +103,7 @@ void main(void) {
 	BCSCTL1 = CALBC1_16MHZ;		// Set range
 	DCOCTL = CALDCO_16MHZ;  	// Set DCO step + modulation
 
-	init();
+	init();//Initialize
 	SetupADC10();
 	SetupUSART_A0();
 	SetupTIMER0_A();
@@ -93,11 +114,12 @@ void main(void) {
 	//return 0;
 }
 
+//Initialize GV values and setup the port pins
 void init(void) {
 	GV.RxBuffer = 0x00;
 	GV.RxTemp = 0;
 	GV.ms_Counter = 0x0000;
-	GV.TS_i = 0;
+	//GV.TS_i = 0;
 	GV.Tx_i = 0;
 	GV.p_TxString = EchoString;
 	GV.TxStringLength = sizeof(EchoString);
@@ -109,7 +131,7 @@ void init(void) {
 	GV.High = *(GV.p_ADC10CalData + CAL_ADC_15T85 + 1);
 	GV.Low = *(GV.p_ADC10CalData + CAL_ADC_15T30 + 1);
 	GV.pwmDutyLevel = 5;
-	GV.sm = _MANUAL_MODE;
+	GV.sm = _AUTO_MODE;
 
 	P1DIR = PxDIR_ALL_OUT;
 	P1OUT = PxOUT_ALL_OUT;
@@ -130,9 +152,10 @@ void SetupUSART_A0(void) {
 	UCA0BR1 = 0x00;  	//Upper Baud rate byte
 	UCA0MCTL = 0x00;  	//Modulation control Register
 	UCA0CTL1 &= ~UCSWRST;
-	IE2 |= UCA0RXIE;
+	IE2 |= UCA0RXIE;//Interrupt on byte Rx
 }
 
+//Timer0 is used as interrupt source to PWM pins
 void SetupTIMER0_A(void) {
 	TA0CCR0 = TIMER0_A0_MAX;
 	TA0CCR1 = TIMER0_A1_STEP * GV.pwmDutyLevel;  	//For ~50% Duty Cycle
@@ -141,6 +164,7 @@ void SetupTIMER0_A(void) {
 	TA0CTL = TASSEL_2 + MC_1 + TACLR;  	//SMCLK, UP, CLEAR
 }
 
+//Timer1 is used as a clock (~1ms interrupts)
 void SetupTIMER1_A(void) {
 	TA1CCR0 = TIMER1_A0_MAX;
 	TA1CCTL0 |= CCIE;
@@ -148,11 +172,6 @@ void SetupTIMER1_A(void) {
 }
 
 //Setup the ADC10 for temperature conversion.
-//V TEMP =0.00355(TEMP C )+0.986
-//.: TEMP C = (V TEMP - 0.986)/0.00355
-//[?](=) TEMP C = (V TEMP - 0.986) * 281.69[/?]
-//Since ADC range is 10 bits (0x0000 to 0x03FF) (0.0V to 3V?)
-//(=) TEMP C = (V TEMP
 void SetupADC10(void) {
 	//Temp Sensor, ADC10CLK/4
 	ADC10CTL1 = INCH_10 + ADC10DIV_3;
@@ -160,13 +179,17 @@ void SetupADC10(void) {
 	ADC10CTL0 = SREF_1 + ADC10SHT_3 + REFON + ADC10ON + ADC10IE;
 	__delay_cycles(ADC10_REF_SETTLE_TIME);
 	ADC10CTL0 |= ENC + ADC10SC;
-	GV.Temperature.calibrated = ADC10MEM;  	//Initialize samples array
+
+	//Initialize samples array
+	GV.Temperature.calibrated = ADC10MEM;
 	InitializeSamples(&GV.Temperature);
-	GV.TxTemp = GV.Temperature.calibrated;
-	ConvertRawToTemp(GV.Temperature.average, &(GV.degreesC));
+	GV.ADCTemp = GV.Temperature.calibrated;//GV.ADCTemp gets initialized here.
+
+	ConvertRawToTemp(GV.Temperature.average, &(GV.degreesC));//Get First reading?
 }
 
-//Start Transmitting the GV TxString
+//Start Transmitting the GV TxString, Sets up the first char of TxString.
+//Enables the UART Tx Interrupt for consecutive characters.
 void TransmitGVTxString(const char temp[], unsigned char length) {
 	GV.p_TxString = temp;
 	GV.TxStringLength = length;
@@ -175,6 +198,7 @@ void TransmitGVTxString(const char temp[], unsigned char length) {
 	UCA0TXBUF = GV.p_TxString[GV.Tx_i++];
 }
 
+//TI Compiler optimizes the fuck out of this, so explicit temp variables are used.
 void ConvertRawToTemp(unsigned int my_raw, int *my_temp) {
 	int t1, t2, t3, t4, t5;
 	t1 = my_raw - GV.Low;
@@ -184,13 +208,10 @@ void ConvertRawToTemp(unsigned int my_raw, int *my_temp) {
 	t5 = t4 + 30;
 	*my_temp = t5;
 //my_temp = (((my_raw-GV.Low) * 50)/(GV.High-GV.Low))+30;
-//my_temp = (unsigned int) ((my_raw - l) * (85 - 35));	//TODO: Here
-//my_temp /= (h-l);
-//my_temp += 30;
 }
 
 //ISRs=================================================================
-
+//Transmit all characters in the TxString
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0_TX_ISR(void) {
 	UCA0TXBUF = GV.p_TxString[GV.Tx_i++]; // TX next character
@@ -281,7 +302,7 @@ __interrupt void USCI0_RX_ISR(void) {
 			case '\e':
 				if ((GV.sm == _SETUP_TEN) || (GV.sm == _SETUP_ONE)) {
 					TransmitGVTxString(SetupString, sizeof(SetupString));
-					GV.sm =	_SETUP_MODE;
+					GV.sm = _SETUP_MODE;
 				}
 				break;
 			default:
@@ -306,7 +327,7 @@ __interrupt void TIMER0_A0_ISR(void) {
 		TA0CCR1 = (TIMER0_A1_STEP * GV.pwmDutyLevel) + 1;	//Updates DUTY Cycle
 	} else {
 		if (GV.diffC > 0) {
-			TA0CCR1 = (TIMER0_A1_STEP + 1 + (unsigned int) GV.DC_slope);//TODO
+			TA0CCR1 = (TIMER0_A1_STEP + 1 + (unsigned int) GV.DC_slope);
 		} else {
 			TA0CCR1 = (TIMER0_A1_STEP + 1);
 		}
@@ -349,9 +370,9 @@ __interrupt
 void ADC10_ISR(void) {
 	GV.Temperature.current = ADC10MEM;
 	UpdateSampleData(&GV.Temperature);
-	GV.TxTemp = GV.Temperature.average;
+	GV.ADCTemp = GV.Temperature.average;
 
-	UpdateADCString(GV.TxTemp, TemperatureString, sizeof(TemperatureString),
+	UpdateADCString(GV.ADCTemp, TemperatureString, sizeof(TemperatureString),
 	TX_TEMP_OFFSET);
 
 	UpdateADCString(GV.degreesC, TemperatureString, sizeof(TemperatureString),
@@ -378,28 +399,17 @@ void TIMER1_A0_ISR(void) {
 	GV.DC_slope = SLOPE_RATE * GV.diffC;	//((180 * GV.diffC) / 75);
 //Update the rest of the Temp String:
 //"\r\n[TTTT->tttt\xB0 C] TL[tttt\xB0 C] PWM[n] or RAW[llll] Mode[m]"
-	UpdateADCString((TIMER0_A1_STEP + 1 + (unsigned int) GV.DC_slope), TemperatureString, sizeof(TemperatureString),
-		PWM_RAW_VALUE_OFFSET);
-	UpdateADCString(GV.lowThresholdC, TemperatureString, sizeof(TemperatureString),
+	UpdateADCString((TIMER0_A1_STEP + 1 + (unsigned int) GV.DC_slope),
+			TemperatureString, sizeof(TemperatureString),
+			PWM_RAW_VALUE_OFFSET);
+	UpdateADCString(GV.lowThresholdC, TemperatureString,
+			sizeof(TemperatureString),
 			THRESHOLD_OFFSET);
-	TemperatureString[MODE_OFFSET]=GV.sm;
+	TemperatureString[MODE_OFFSET] = GV.sm;
 //Trigger next ADC? ADC10CTL0 |= ENC + ADC10SC;
 	if (!(ADC10CTL0 & ADC10SC)) {
 		ADC10CTL0 |= ENC + ADC10SC;
 	}
-//Handle System State Machine
-	/*
-	 switch (GV.sm) {
-	 case _AUTO_MODE:
-
-	 break;
-	 case _MANUAL_MODE:
-	 //break;
-	 case _SETUP_MODE:
-	 //break;
-	 default:
-	 break;
-	 }*/
 
 }
 
