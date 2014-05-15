@@ -27,12 +27,16 @@
 #define MS_COUNTER_MAX 1000 //For ~1s @ 16MHz
 //#define ASCII_OFFSET 0x30
 #define TS_MASK 0x000f
-#define TX_TEMP_OFFSET 5
-#define DEGREESC_OFFSET 13
+#define TX_TEMP_OFFSET 3
+#define DEGREESC_OFFSET 9
+#define THRESHOLD_OFFSET 21
+#define PWM_DUTY_LEVEL_OFFSET 34
+#define PWM_RAW_VALUE_OFFSET 44
+#define MODE_OFFSET 55
 #define SLOPE_HI 180
+#define SLOPE_RATE 4
 #define TARGET_TEMP (int)(25)
 #define MAX_TEMP (int)(100)
-#define PWM_DUTY_LEVEL_OFFSET 47
 
 #define LEDS_DIR P1DIR
 #define LEDS_OUT P1OUT
@@ -44,12 +48,13 @@
 
 
 typedef enum{
-	_AUTO_MODE = 0,
-	_MANUAL_MODE,
-	_SETUP_MODE,
-	_SETUP_TEN,
-	_SETUP_ONE,
-	_SETUP_ENTER
+	_AUTO_MODE = 'a',
+	_MANUAL_MODE = 'm',
+	_SETUP_MODE = 's',
+	_DEBUG_MODE = 'd',
+	_SETUP_TEN = 't',
+	_SETUP_ONE = 'o',
+	_SETUP_ENTER = 'e'
 }SystemMode;
 
 void init(void);
@@ -58,6 +63,6 @@ void SetupTIMER0_A(void);
 void SetupTIMER1_A(void);
 void SetupADC10(void);
 void ConvertRawToTemp(unsigned int my_raw, int *my_temp);
-void TransmitGVTxString(void);
+void TransmitGVTxString(const char temp[], unsigned char length);//TODO: HERE
 
 #endif /* MAIN_H_ */

@@ -27,29 +27,31 @@
  */
 
 //Global Variables
-const char OutputString[] = { "Hello World\r\n" };
+const char OutputString[] = { "\r\nHello World" };
 const char EchoString[] =
 		{
-				"Fan Controller Module:\r\n\
+				"\r\nFan Controller Module:\r\n\
 		t => Current Temperature\r\n\
 		u => Hello\r\n\
 		e => Echo this prompt\r\n\
 		a => Automatic Mode (Default, 25 \xB0 C)\r\n\
 		s => Setup Mode \r\n\
-		m => Manual Mode \r\n" };
-//						    0         1         2         3         4
-//-------------------Char: "012345678901234567890123456789012345678901234567 8 9"
-char TemperatureString[] =
-		"Raw: TTTT -> tttt Degrees C @ Duty Cycle Level n\r\n";
-const char SetupString[] = "Setup Mode\r\n";
-const char AutoString[] = "Auto Mode\r\n";
-const char ManuString[] = "Manual Mode\r\n";
+		m => Manual Mode \r\n\
+		l => Under Setup Mode, Low Threshold input\r\n" };
+//						     0          1            2            3         4		  5
+//-------------------Char: "0 1 234567890123   456789012345   6789012345678901234567890123456789"
+char TemperatureString[] = "\r\n[TTTT->tttt\xB0 C] TL[tttt\xB0 C] PWM[n] or RAW[llll] Mode[m]";
+const char SetupString[] = "\r\nSetup Mode";
+const char AutoString[] = "\r\nAuto Mode";
+const char DebugString[] = "\r\nDebug Mode";
+const char ManualString[] = "\r\nManual Mode";
 const char LowString[] =
-		"Enter Low Threshold in degrees C (30% duty cycle below this point, default is 25):"; //ten, one, enter=="\r"?
-const char ErrorString[] = "ERROR: Input must be between 00-99";
+		"\r\nEnter Low Threshold in \xB0 C (30% duty cycle below this point, default is 25\xB0 ):"; //ten, one, enter=="\r"?
+const char ErrorString[] = "\r\nERROR: Input must be between 00-99";
 
 struct {
 	unsigned char RxBuffer;
+	unsigned char RxTemp;
 	unsigned int TxTemp;
 	unsigned int ms_Counter;	//Keep track of current ms count
 	unsigned char TS_i;
@@ -93,6 +95,7 @@ void main(void) {
 
 void init(void) {
 	GV.RxBuffer = 0x00;
+	GV.RxTemp = 0;
 	GV.ms_Counter = 0x0000;
 	GV.TS_i = 0;
 	GV.Tx_i = 0;
@@ -163,7 +166,10 @@ void SetupADC10(void) {
 	ConvertRawToTemp(GV.Temperature.average, &(GV.degreesC));
 }
 
-void TransmitGVTxString(void) {
+//Start Transmitting the GV TxString
+void TransmitGVTxString(const char temp[], unsigned char length) {
+	GV.p_TxString = temp;
+	GV.TxStringLength = length;
 	GV.Tx_i = 0;
 	IE2 |= UCA0TXIE;	// Enable USCI_A0 TX interrupt
 	UCA0TXBUF = GV.p_TxString[GV.Tx_i++];
@@ -201,25 +207,18 @@ __interrupt void USCI0_RX_ISR(void) {
 	if (GV.sm != _SETUP_ENTER) {
 		switch (GV.RxBuffer) {
 			case 'u': //Hello World
-				GV.p_TxString = OutputString;
-				GV.TxStringLength = sizeof(OutputString);
-				TransmitGVTxString();
+				TransmitGVTxString(OutputString, sizeof(OutputString));
 				break;
 			case 'e': //Echo String
-				GV.p_TxString = EchoString;
-				GV.TxStringLength = sizeof(EchoString);
-				TransmitGVTxString();
+				TransmitGVTxString(EchoString, sizeof(EchoString));
 				break;
 			case 't': //Display current raw temp, degrees c, pwm level
-				GV.p_TxString = TemperatureString;
-				GV.TxStringLength = sizeof(TemperatureString);
-				TransmitGVTxString();
+				TransmitGVTxString(TemperatureString,
+						sizeof(TemperatureString));
 				break;
 			case 'l': //SETUP_MODE: Display message and prompt
-				GV//TODO
 				if (GV.sm == _SETUP_MODE) {
-					GV.p_TxString = LowString;
-					GV.TxStringLength = sizeof(LowString);
+					TransmitGVTxString(LowString, sizeof(LowString)); //TODO
 					GV.sm = _SETUP_TEN;
 				}
 				break;
@@ -233,52 +232,69 @@ __interrupt void USCI0_RX_ISR(void) {
 			case '8':
 			case '9':
 			case '0':
+				UCA0TXBUF = GV.RxBuffer;
 				if (GV.sm == _MANUAL_MODE) { //Set as multiple of TIMER0_A1_STEP, duty cycle is 100% x (TIMER0_A1_STEP + 1)/(TIMER0_A0_MAX)
 					GV.pwmDutyLevel = (GV.RxBuffer - ASCII_OFFSET ? : 10); //[https://en.wikipedia.org/wiki/%3F:#C]
+					break;
 				}
 				if (GV.sm == _SETUP_TEN) { //Degrees * 10
-					GV.lowThresholdC = 10 * (GV.RxBuffer - ASCII_OFFSET);
+					GV.RxTemp = 10 * (GV.RxBuffer - ASCII_OFFSET);
 					GV.sm = _SETUP_ONE;
+					break;
 				}
 				if (GV.sm == _SETUP_ONE) { //Degrees * 1
-					GV.lowThresholdC = (GV.RxBuffer - ASCII_OFFSET);
+					GV.RxTemp += (GV.RxBuffer - ASCII_OFFSET);
+
 					GV.sm = _SETUP_ENTER;
+					break;
 				}
 				break;
-				/*
-				 case '0':
-				 if (GV.sm == _MANUAL_MODE) {
-				 GV.pwmDutyLevel = 10;
-				 }
-				 break;
-				 */
 			case 'a':
 				if (GV.sm != _AUTO_MODE) {
+					TransmitGVTxString(AutoString, sizeof(AutoString));
 					GV.sm = _AUTO_MODE;
+				}
+				UCA0TXBUF = GV.RxBuffer;
+				break;
+			case 'd':
+				if (GV.sm != _DEBUG_MODE) {
+					TransmitGVTxString(DebugString, sizeof(DebugString));
+					GV.sm = _DEBUG_MODE;
 				}
 				UCA0TXBUF = GV.RxBuffer;
 				break;
 			case 's':
 				if (GV.sm != _SETUP_MODE) {
+					TransmitGVTxString(SetupString, sizeof(SetupString));
 					GV.sm = _SETUP_MODE;
 				} else {
+					TransmitGVTxString(AutoString, sizeof(AutoString));
 					GV.sm = _AUTO_MODE;
 				}
 				UCA0TXBUF = GV.RxBuffer;
 				break;
 			case 'm':
 				GV.sm = _MANUAL_MODE;
+				TransmitGVTxString(ManualString, sizeof(ManualString));
 				UCA0TXBUF = GV.RxBuffer;
 				break;
 			case '\e':
-				if ((GV.sm == _SETUP_TEN) || (GV.sm == _SETUP_ONE)) GV.sm =
-						_SETUP_MODE;
+				if ((GV.sm == _SETUP_TEN) || (GV.sm == _SETUP_ONE)) {
+					TransmitGVTxString(SetupString, sizeof(SetupString));
+					GV.sm =	_SETUP_MODE;
+				}
+				break;
 			default:
 				UCA0TXBUF = '\r';
 				break;
 		}
 	} else {
-		if (GV.RxBuffer == '\r') GV.sm = _AUTO_MODE;
+		if (GV.RxBuffer == '\r') {
+			GV.lowThresholdC = (int) (GV.RxTemp);
+			GV.RxTemp = 0;
+			TransmitGVTxString(AutoString, sizeof(AutoString));
+			GV.sm = _AUTO_MODE;
+		}
 	}
 }
 
@@ -290,7 +306,7 @@ __interrupt void TIMER0_A0_ISR(void) {
 		TA0CCR1 = (TIMER0_A1_STEP * GV.pwmDutyLevel) + 1;	//Updates DUTY Cycle
 	} else {
 		if (GV.diffC > 0) {
-			TA0CCR1 = (TIMER0_A1_STEP + 1 + (unsigned int)GV.DC_slope);	//TODO
+			TA0CCR1 = (TIMER0_A1_STEP + 1 + (unsigned int) GV.DC_slope);//TODO
 		} else {
 			TA0CCR1 = (TIMER0_A1_STEP + 1);
 		}
@@ -343,8 +359,6 @@ void ADC10_ISR(void) {
 
 	TemperatureString[PWM_DUTY_LEVEL_OFFSET] = (
 			GV.pwmDutyLevel == 10 ? '0' : GV.pwmDutyLevel + ASCII_OFFSET);
-
-//sprintf(TemperatureString,"Raw:%04d\r\n",GV.Temperature.average);
 }
 
 #pragma vector=TIMER1_A0_VECTOR
@@ -355,10 +369,20 @@ void TIMER1_A0_ISR(void) {
 
 		P1OUT ^= LED2;
 		GV.ms_Counter = 0;	//Reset Counter
+		if (GV.sm == _DEBUG_MODE) {
+			TransmitGVTxString(TemperatureString, sizeof(TemperatureString));
+		}
 	}
 	ConvertRawToTemp(GV.Temperature.average, &(GV.degreesC));
 	GV.diffC = GV.degreesC - GV.lowThresholdC;
-	GV.DC_slope = ((180 * GV.diffC) / 75);
+	GV.DC_slope = SLOPE_RATE * GV.diffC;	//((180 * GV.diffC) / 75);
+//Update the rest of the Temp String:
+//"\r\n[TTTT->tttt\xB0 C] TL[tttt\xB0 C] PWM[n] or RAW[llll] Mode[m]"
+	UpdateADCString((TIMER0_A1_STEP + 1 + (unsigned int) GV.DC_slope), TemperatureString, sizeof(TemperatureString),
+		PWM_RAW_VALUE_OFFSET);
+	UpdateADCString(GV.lowThresholdC, TemperatureString, sizeof(TemperatureString),
+			THRESHOLD_OFFSET);
+	TemperatureString[MODE_OFFSET]=GV.sm;
 //Trigger next ADC? ADC10CTL0 |= ENC + ADC10SC;
 	if (!(ADC10CTL0 & ADC10SC)) {
 		ADC10CTL0 |= ENC + ADC10SC;
@@ -367,11 +391,12 @@ void TIMER1_A0_ISR(void) {
 	/*
 	 switch (GV.sm) {
 	 case _AUTO_MODE:
+
 	 break;
 	 case _MANUAL_MODE:
-	 break;
+	 //break;
 	 case _SETUP_MODE:
-	 break;
+	 //break;
 	 default:
 	 break;
 	 }*/
