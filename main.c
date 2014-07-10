@@ -1,7 +1,7 @@
 #include <msp430.h> 
 #include "main.h"
 #include "sample.h"
-//#include <stdio.h>
+
 /*
  * main.c
  * Paul Hey C0320318
@@ -56,7 +56,7 @@ const char EchoString[] =
 		s => Setup Mode \r\n\
 		m => Manual Mode \r\n\
 		l => Under Setup Mode, Low Threshold input\r\n" };
-//						     0          1            2            3         4		  5
+//						    0           1            2            3         4		  5
 //-------------------Char: "0 1 234567890123   456789012345   6789012345678901234567890123456789"
 //This is the only mutable string, Used to display system information.
 char TemperatureString[] =
