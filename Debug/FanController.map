@@ -1,7 +1,7 @@
 ******************************************************************************
-                  MSP430 Linker PC v4.3.1                      
+                  MSP430 Linker PC v4.3.3                      
 ******************************************************************************
->> Linked Thu May 15 16:55:26 2014
+>> Linked Mon Aug 11 16:56:42 2014
 
 OUTPUT FILE NAME:   <FanController.out>
 ENTRY POINT SYMBOL: "_c_int00"  address: 0000c778

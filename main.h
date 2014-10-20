@@ -8,6 +8,8 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+//#include <mspmathlib.h>
+
 #define PxDIR_ALL_OUT 0xff
 #define PxOUT_ALL_OUT 0x00
 
