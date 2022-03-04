@@ -1,4 +1,4 @@
-#include <msp430.h> 
+#include <msp430.h>
 #include "main.h"
 /*
  * main.c
@@ -6,18 +6,12 @@
  * FanController - Version[0.1]
  *
  * [2014 - APR - 10]
-<<<<<<< local
  * 0.2 =>	[ ]Parse & Respond to commands
  * 			[ ]Sample Temperature Sensor every 100ms
  * 			[ ]Do rolling average with sensor data
  *
  * 0.1 =>	[$]Echoes back on USART @ 128000BAUD @ 16MHz.
  *
-=======
- * 0.2 =>
- * 0.1 =>	Echoes back on
- * 			USART @ 128000 BAUD.
->>>>>>> other
  *
  */
 
