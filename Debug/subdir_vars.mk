@@ -15,12 +15,12 @@ OBJS += \
 ./sample.obj 
 
 C_DEPS += \
-./main.pp \
-./sample.pp 
+./main.d \
+./sample.d 
 
 C_DEPS__QUOTED += \
-"main.pp" \
-"sample.pp" 
+"main.d" \
+"sample.d" 
 
 OBJS__QUOTED += \
 "main.obj" \

@@ -22,11 +22,11 @@
 #define LED2 BIT6
 
 #define MOSFET BIT3
-#define TIMER0_A0_MAX 200 //For ~0.01ms @ 16MHz
-#define TIMER0_A1_MAX 80 //For 50% DCY
+#define TIMER0_A0_MAX 200  // For ~0.01ms @ 16MHz
+#define TIMER0_A1_MAX 80   // For 50% DCY
 #define TIMER0_A1_STEP 20
-#define TIMER1_A0_MAX 16000 //For ~1ms
-#define MS_COUNTER_MAX 1000 //For ~1s @ 16MHz
+#define TIMER1_A0_MAX 16000  // For ~1ms
+#define MS_COUNTER_MAX 1000  // For ~1s @ 16MHz
 //#define ASCII_OFFSET 0x30
 #define TS_MASK 0x000f
 #define TX_TEMP_OFFSET 3
@@ -46,25 +46,24 @@
 #define TXD BIT1
 #define RXD BIT2
 
-#define ADC10_REF_SETTLE_TIME 16000//1us @ 16MHz?
+#define ADC10_REF_SETTLE_TIME 16000  // 1us @ 16MHz?
 
-
-typedef enum{
-	_AUTO_MODE = 'a',
-	_MANUAL_MODE = 'm',
-	_SETUP_MODE = 's',
-	_DEBUG_MODE = 'd',
-	_SETUP_TEN = 't',
-	_SETUP_ONE = 'o',
-	_SETUP_ENTER = 'e'
-}SystemMode;
+typedef enum {
+  _AUTO_MODE = 'a',
+  _MANUAL_MODE = 'm',
+  _SETUP_MODE = 's',
+  _DEBUG_MODE = 'd',
+  _SETUP_TEN = 't',
+  _SETUP_ONE = 'o',
+  _SETUP_ENTER = 'e'
+} SystemMode;
 
 void init(void);
 void SetupUSART_A0(void);
 void SetupTIMER0_A(void);
 void SetupTIMER1_A(void);
 void SetupADC10(void);
-void ConvertRawToTemp(unsigned int my_raw, int *my_temp);
-void TransmitGVTxString(const char temp[], unsigned char length);//TODO: HERE
+void ConvertRawToTemp(unsigned int my_raw, int* my_temp);
+void TransmitGVTxString(const char temp[], unsigned char length);  // TODO: HERE
 
 #endif /* MAIN_H_ */
